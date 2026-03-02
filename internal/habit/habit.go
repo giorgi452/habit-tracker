@@ -2,67 +2,58 @@
 package habit
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
 
-type Frequency int
-
-const (
-	Once Frequency = iota
-	Daily
-	Weekly
-	Monthly
-	Weekdays
-)
-
-func (f Frequency) String() string {
-	return [...]string{"Once", "Daily", "Weekly", "Monthly", "Weekdays"}[f]
-}
-
-func ParseFrequency(s string) Frequency {
-	switch strings.ToLower(s) {
-	case "daily":
-		return Daily
-	case "weekly":
-		return Weekly
-	case "monthly":
-		return Monthly
-	case "weekdays":
-		return Weekdays
-	default:
-		return Once
-	}
-}
-
-type Reminder struct {
-	ID     int `json:"id"`
-	Hour   int `json:"hour"`
-	Minute int `json:"minute"`
-}
-
 type Habit struct {
-	ID            int        `json:"id"`
-	Name          string     `json:"name"`
-	Freq          Frequency  `json:"freq"`
-	Interval      int        `json:"interval"`
-	Reminders     []Reminder `json:"reminders"`
-	SpecificDate  *time.Time
-	CreatedAt     time.Time  `json:"created_at"`
-	LastCompleted *time.Time `json:"last_completed"`
-	IsArchived    bool
+	ID                int        `json:"id"`
+	Name              string     `json:"name"`
+	Freq              Frequency  `json:"freq"`
+	Interval          int        `json:"interval"`
+	Reminders         []Reminder `json:"reminders"`
+	EstimatedDuration int        `json:"estimated_duration"`
+	SpecificDate      *time.Time
+	CreatedAt         time.Time  `json:"created_at"`
+	LastCompleted     *time.Time `json:"last_completed"`
+	IsArchived        bool
 }
 
-func (h *Habit) AddReminder(timeStr string) error {
-	t, err := time.Parse("15:04", timeStr)
-	if err != nil {
-		return err
+func AddHabit(name string, frequency Frequency, durationStr string, timeStrings []string) (*Habit, error) {
+	h := &Habit{
+		Name:      name,
+		Freq:      frequency,
+		Interval:  1,
+		Reminders: []Reminder{},
 	}
-	h.Reminders = append(h.Reminders, Reminder{Hour: t.Hour(), Minute: t.Minute()})
-	return nil
+
+	if durationStr != "" {
+		if err := h.SetDuration(durationStr); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, ts := range timeStrings {
+		if err := h.AddReminder(ts); err != nil {
+			return nil, err
+		}
+	}
+
+	return h, nil
 }
 
-func (h *Habit) SetDate(year, month, day int) {
-	date := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.Local)
-	h.SpecificDate = &date
+func (h *Habit) String() string {
+	var times []string
+	for _, r := range h.Reminders {
+		times = append(times, fmt.Sprintf("%02d:%02d", r.Hour, r.Minute))
+	}
+
+	status := "Pending"
+	if h.LastCompleted != nil {
+		status = fmt.Sprintf("Last done: %s", h.LastCompleted.Format("Jan 02"))
+	}
+
+	return fmt.Sprintf("[%d] %s | Every: %s | Duration: %ds | Times: %s | %s",
+		h.ID, h.Name, h.Freq, h.EstimatedDuration, strings.Join(times, ","), status)
 }
