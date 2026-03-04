@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -16,56 +15,51 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file. Ensure it exists in the project root.")
-	}
+	godotenv.Load()
+	webhook := os.Getenv("WEBHOOK_URL")
 
-	var mu sync.Mutex
+	var mu sync.RWMutex
 	store := []*habit.Habit{}
 
-	go daemon.Start(os.Getenv("WEBHOOK_URL"), store)
+	go daemon.Start(webhook, &store, &mu)
 
+	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		op, _ := menu.Print()
+		op, err := menu.Print()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 
 		switch op {
 		case 1:
-			scanner := bufio.NewScanner(os.Stdin)
 			fmt.Print("Enter habit name: ")
 			scanner.Scan()
 			name := scanner.Text()
 
-			fmt.Print("Enter repeat frequency (Daily, Weekly): ")
+			fmt.Print("Enter frequency (Daily, Weekly, Weekdays): ")
 			scanner.Scan()
-			repeat := scanner.Text()
+			freq := habit.ParseFrequency(scanner.Text())
 
-			fmt.Print("Enter duration (e.g., 30m): ")
+			fmt.Print("Duration (e.g. 15m): ")
 			scanner.Scan()
-			duration := scanner.Text()
+			dur := scanner.Text()
 
-			fmt.Print("Enter times (comma separated, e.g., 12:00,18:00): ")
+			fmt.Print("Times (e.g. 09:00,17:00): ")
 			scanner.Scan()
-			timesInput := scanner.Text()
-			rawTimes := strings.Split(timesInput, ",")
-			var times []string
-			for _, t := range rawTimes {
-				trimmed := strings.TrimSpace(t)
-				if trimmed != "" {
-					times = append(times, trimmed)
-				}
-			}
+			tInput := strings.Split(scanner.Text(), ",")
 
-			newHabit, err := habit.AddHabit(name, habit.ParseFrequency(repeat), duration, times)
+			newHabit, err := habit.AddHabit(name, freq, dur, tInput)
 			if err != nil {
-				fmt.Println("Error adding habit:", err)
-				return
+				fmt.Println("Error:", err)
+				continue
 			}
+
 			mu.Lock()
 			store = append(store, newHabit)
 			mu.Unlock()
 
-			fmt.Println("Habit added successfully!")
+			fmt.Println("✔ Habit added!")
 		case 5:
 			os.Exit(0)
 			return

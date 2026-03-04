@@ -2,32 +2,33 @@ package daemon
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"habit-tracker/internal/habit"
 	"habit-tracker/internal/notifications"
 )
 
-func Start(webhookURL string, habits []*habit.Habit) {
+func Start(webhookURL string, habits *[]*habit.Habit, mu *sync.RWMutex) {
 	fmt.Printf("Daemon started at %s\n", time.Now().Format("15:04"))
-	fmt.Printf("WebHook: %s\n", webhookURL)
 
+	time.Sleep(time.Duration(60-time.Now().Second()) * time.Second)
 	ticker := time.NewTicker(1 * time.Minute)
 
 	for range ticker.C {
-		now := time.Now()
+		mu.RLock()
+		currentHabits := *habits
 
-		fmt.Printf("[%s] Scanning %d habits...\n", now.Format("15:04"), len(habits))
-
-		for _, h := range habits {
+		for _, h := range currentHabits {
 			if h.IsDue() {
-				fmt.Printf("Notification triggered for: %s\n", h.Name)
-
-				err := notifications.SendDiscordNotification(webhookURL, h)
-				if err != nil {
-					fmt.Printf("Discord Error: %v\n", err)
-				}
+				go func(target *habit.Habit) {
+					err := notifications.SendDiscordNotification(webhookURL, target)
+					if err != nil {
+						fmt.Printf("Discord Error for %s: %v\n", target.Name, err)
+					}
+				}(h)
 			}
 		}
+		mu.RUnlock()
 	}
 }

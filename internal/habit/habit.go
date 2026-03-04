@@ -25,7 +25,8 @@ func AddHabit(name string, frequency Frequency, durationStr string, timeStrings 
 		Name:      name,
 		Freq:      frequency,
 		Interval:  1,
-		Reminders: []Reminder{},
+		Reminders: make([]Reminder, 0, len(timeStrings)),
+		CreatedAt: time.Now(),
 	}
 
 	if durationStr != "" {
@@ -35,11 +36,14 @@ func AddHabit(name string, frequency Frequency, durationStr string, timeStrings 
 	}
 
 	for _, ts := range timeStrings {
-		if err := h.AddReminder(ts); err != nil {
+		cleaned := strings.TrimSpace(ts)
+		if cleaned == "" {
+			continue
+		}
+		if err := h.AddReminder(cleaned); err != nil {
 			return nil, err
 		}
 	}
-
 	return h, nil
 }
 
