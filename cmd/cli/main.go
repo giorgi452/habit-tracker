@@ -34,6 +34,11 @@ func main() {
 		switch op {
 		case 1:
 			menu.HandleAddHabit(scanner, &store, &mu)
+		case 2:
+			h := menu.ListAndSelectHabit(scanner, &store, &mu)
+			if h != nil {
+				menu.StartHabit(scanner, h)
+			}
 		case 5:
 			return
 		}

@@ -22,7 +22,7 @@ func Print() (int8, error) {
 	}
 
 	if operation < 1 || operation > 5 {
-		fmt.Println("⚠️ Error: Choice must be between 1 and 5.")
+		fmt.Println("Error: Choice must be between 1 and 5.")
 		return Print()
 	}
 	return operation, nil
