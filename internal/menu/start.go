@@ -11,20 +11,18 @@ import (
 
 func StartHabit(scanner *bufio.Scanner, h *habit.Habit) {
 	start := time.Now()
-
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	done := make(chan bool)
+	done := make(chan struct{})
 
 	go func() {
 		fmt.Printf("\nTracking '%s' (Target: %s)...\n", h.Name, h.GetDurationReadable())
-		fmt.Println("Press 'd' + Enter to mark as completed.")
-
+		fmt.Println("Press 'd' + Enter to mark as done, or anything else to stop.")
 		for {
 			select {
-			case <-ticker.C:
-				elapsed := time.Since(start).Round(time.Second)
+			case t := <-ticker.C:
+				elapsed := t.Sub(start).Round(time.Second)
 				fmt.Printf("\rElapsed: %v", elapsed)
 			case <-done:
 				return
@@ -33,20 +31,20 @@ func StartHabit(scanner *bufio.Scanner, h *habit.Habit) {
 	}()
 
 	scanner.Scan()
+	close(done)
 	input := strings.ToLower(strings.TrimSpace(scanner.Text()))
-	done <- true
+
+	elapsed := time.Since(start).Round(time.Second)
+	fmt.Println()
 
 	if input == "d" {
-		elapsed := time.Since(start)
 		now := time.Now()
 		h.LastCompleted = &now
-		fmt.Printf("\nFinished! Total time: %v\n", elapsed.Round(time.Second))
-
-		estimatedSeconds := h.EstimatedDuration
-		if int(elapsed.Seconds()) < estimatedSeconds {
+		fmt.Printf("Finished! Total time: %v\n", elapsed)
+		if int(elapsed.Seconds()) < h.EstimatedDuration {
 			fmt.Println("Great work! You finished faster than your estimate.")
 		}
 	} else {
-		fmt.Println("\nTracking stopped without completing.")
+		fmt.Println("Tracking stopped without completing.")
 	}
 }

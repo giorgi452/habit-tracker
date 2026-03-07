@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"sync"
 
 	"habit-tracker/internal/daemon"
 	"habit-tracker/internal/habit"
@@ -17,10 +16,8 @@ func main() {
 	godotenv.Load()
 	webhook := os.Getenv("WEBHOOK_URL")
 
-	var mu sync.RWMutex
-	store := []*habit.Habit{}
-
-	go daemon.Start(webhook, &store, &mu)
+	store := habit.NewStore()
+	go daemon.Start(webhook, store)
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -33,15 +30,18 @@ func main() {
 
 		switch op {
 		case 1:
-			menu.HandleAddHabit(scanner, &store, &mu)
+			menu.HandleAddHabit(scanner, store)
 		case 2:
-			h := menu.ListAndSelectHabit(scanner, &store, &mu)
-			if h != nil {
+			if h := menu.ListAndSelectHabit(scanner, store); h != nil {
 				menu.StartHabit(scanner, h)
 			}
+		case 3:
+			menu.HandleEditHabit(scanner, store)
 		case 4:
-			menu.HandleDeleteHabit(scanner, &store, &mu)
+			menu.HandleDeleteHabit(scanner, store)
 		case 5:
+			menu.ListHabits(store)
+		case 6:
 			return
 		}
 	}

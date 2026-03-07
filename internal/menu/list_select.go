@@ -3,40 +3,48 @@ package menu
 import (
 	"bufio"
 	"fmt"
-	"sync"
 
 	"habit-tracker/internal/habit"
 )
 
-func ListAndSelectHabit(scanner *bufio.Scanner, store *[]*habit.Habit, mu *sync.RWMutex) *habit.Habit {
-	mu.RLock()
-	defer mu.RUnlock()
+func ListHabits(store *habit.Store) {
+	habits := store.List()
+	if len(habits) == 0 {
+		fmt.Println("No habits found. Add one first!")
+		return
+	}
 
-	if len(*store) == 0 {
+	fmt.Println("\n--- Your Habits ---")
+	for _, h := range habits {
+		fmt.Println(h)
+	}
+}
+
+func ListAndSelectHabit(scanner *bufio.Scanner, store *habit.Store) *habit.Habit {
+	habits := store.List()
+	if len(habits) == 0 {
 		fmt.Println("No habits found. Add one first!")
 		return nil
 	}
 
 	fmt.Println("\n--- Your Habits ---")
-	for _, h := range *store {
-		fmt.Println(h.String())
+	for _, h := range habits {
+		fmt.Println(h)
 	}
 
-	fmt.Print("\nEnter Habit ID to select (or 0 to cancel): ")
+	fmt.Print("\nEnter Habit ID (or 0 to cancel): ")
 	scanner.Scan()
-	var selectedID int
-	fmt.Sscanf(scanner.Text(), "%d", &selectedID)
 
-	if selectedID <= 0 {
+	var id int
+	fmt.Sscanf(scanner.Text(), "%d", &id)
+	if id <= 0 {
 		return nil
 	}
 
-	for _, h := range *store {
-		if h.ID == selectedID {
-			return h
-		}
+	h, err := store.Get(id)
+	if err != nil {
+		fmt.Println("Invalid ID.")
+		return nil
 	}
-
-	fmt.Println("Invalid ID.")
-	return nil
+	return h
 }

@@ -10,7 +10,8 @@ func Print() (int8, error) {
 	fmt.Println("[2] Start Habit")
 	fmt.Println("[3] Edit Habit")
 	fmt.Println("[4] Delete Habit")
-	fmt.Println("[5] Exit")
+	fmt.Println("[5] List Habits")
+	fmt.Println("[6] Exit")
 	fmt.Print("Choose operation: ")
 
 	_, err := fmt.Scanln(&operation)
@@ -21,8 +22,8 @@ func Print() (int8, error) {
 		return 0, fmt.Errorf("please enter a number, not text")
 	}
 
-	if operation < 1 || operation > 5 {
-		fmt.Println("Error: Choice must be between 1 and 5.")
+	if operation < 1 || operation > 6 {
+		fmt.Println("Error: Choice must be between 1 and 6.")
 		return Print()
 	}
 	return operation, nil

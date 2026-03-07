@@ -20,7 +20,12 @@ type Habit struct {
 	IsArchived        bool
 }
 
-func AddHabit(name string, frequency Frequency, durationStr string, timeStrings []string) (*Habit, error) {
+func newHabit(
+	name string,
+	frequency Frequency,
+	durationStr string,
+	timeStrings []string,
+) (*Habit, error) {
 	h := &Habit{
 		Name:      name,
 		Freq:      frequency,
