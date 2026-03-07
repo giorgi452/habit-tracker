@@ -39,6 +39,8 @@ func main() {
 			if h != nil {
 				menu.StartHabit(scanner, h)
 			}
+		case 4:
+			menu.HandleDeleteHabit(scanner, &store, &mu)
 		case 5:
 			return
 		}
